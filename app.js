@@ -11,6 +11,9 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
+//change the default parser of Express
+app.set('query parser', 'extended');
+
 app.use(express.json());
 app.use(express.static(`${__dirname}/public`));
 
