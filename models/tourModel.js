@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
+const User = require('../models/userModel');
 
 const tourSchema = new mongoose.Schema(
   {
@@ -74,7 +75,38 @@ const tourSchema = new mongoose.Schema(
     },
     secretTour: {
       type: Boolean,
+      default: false,
     },
+    startLocation: {
+      type: {
+        type: String,
+        default: 'Point',
+        enum: ['Point'],
+      },
+      coordinates: [Number],
+      address: String,
+      descreption: String,
+    },
+    locations: [
+      {
+        type: {
+          type: String,
+          default: 'Point',
+          enum: ['Point'],
+        },
+        coordinates: [Number],
+        address: String,
+        descreption: String,
+        day: Number,
+      },
+    ],
+    // guides: Array,
+    guides: [
+      {
+        type: mongoose.Schema.ObjectId,
+        ref: 'User',
+      },
+    ],
   },
   {
     toJSON: {
@@ -95,6 +127,27 @@ tourSchema.pre('save', function (next) {
   this.slug = slugify(this.name, { lower: true });
   next();
 });
+
+// tourSchema.pre('save', async function (next) {
+//   const guidesPromises = this.guides.map(async (id) => await User.findById(id));
+//   this.guides = await Promise.all(guidesPromises);
+//   next();
+// });
+
+// tourSchema.pre('findOneAndUpdate', async function (next) {
+//   // Get the update object (the data being sent in update)
+//   let update = this.getUpdate();
+
+//   if (update.guides) {
+//     const guidesPromises = update.guides.map((id) => User.findById(id));
+//     update.guides = await Promise.all(guidesPromises);
+
+//     // Apply back the transformed guides
+//     this.setUpdate(update);
+//   }
+
+//   next();
+// });
 
 tourSchema.pre(/^find/, function (next) {
   this.start = Date.now();
