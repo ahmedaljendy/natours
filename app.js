@@ -3,14 +3,16 @@ const morgan = require('morgan');
 
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
-const mongoSanitize = require('express-mongo-sanitize');
+// const mongoSanitize = require('express-mongo-sanitize');
 const hpp = require('hpp');
 const xssSanitizer = require('./middlewares/xssSanitizer');
+const sanitize = require('./middlewares/sanitize');
 
 const AppError = require('./utils/appError');
 const globalErrorHandler = require('./controllers/errorController');
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
+const reviewRouter = require('./routes/reviewRoutes');
 
 const app = express();
 
@@ -34,7 +36,7 @@ app.use('/api', limiter);
 
 app.use(express.json({ limit: '10kb' }));
 
-app.use(mongoSanitize());
+app.use(sanitize());
 // Custom middleware to sanitize req.body, req.query, req.params
 app.use(xssSanitizer);
 
@@ -61,6 +63,7 @@ app.use((req, res, next) => {
 // 3) ROUTES
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
+app.use('/api/v1/reviews', reviewRouter);
 
 app.all(/.*/, (req, res, next) => {
   next(new AppError(404, `Can't find ${req.originalUrl} on this server!`));
