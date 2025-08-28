@@ -12,6 +12,11 @@ const filterObj = (obj, ...fields) => {
   return newObj;
 };
 
+exports.getMe = async (req, res, next) => {
+  req.params.id = req.user.id;
+  next();
+};
+
 exports.updateMe = async (req, res) => {
   // 1) Prevent the update of the password
   if (req.body.password || req.body.passwordConfirm)
@@ -39,7 +44,7 @@ exports.deleteMe = async (req, res) => {
     status: 'success',
   });
 };
-
+exports.createUser = async (req, res) => {};
 exports.getAllUsers = factory.getAll(User);
 exports.getUser = factory.getOne(User);
 exports.updateUser = factory.updateOne(User);

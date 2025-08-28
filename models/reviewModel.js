@@ -29,6 +29,8 @@ const reviewSchema = new mongoose.Schema({
   },
 });
 
+reviewSchema.index({ tour: 1, user: 1 }, { unique: true });
+
 reviewSchema.pre(/^find/, function (next) {
   this.populate([
     {
@@ -41,6 +43,42 @@ reviewSchema.pre(/^find/, function (next) {
     // },
   ]);
   next();
+});
+
+reviewSchema.statics.calcAverageRatinga = async function (tourId) {
+  const stats = await this.aggregate([
+    {
+      $match: { tour: tourId },
+    },
+    {
+      $group: {
+        _id: '$tour',
+        nRating: { $sum: 1 },
+        avgRating: { $avg: '$rating' },
+      },
+    },
+  ]);
+
+  await Tour.findByIdAndUpdate(tourId, {
+    ratingQuantity: stats[0].nRating,
+    ratingAverages: stats[0].avgRating,
+  });
+};
+
+reviewSchema.post('save', function () {
+  this.constructor.calcAverageRatinga(this.tour);
+});
+
+reviewSchema.pre(/^findOneAnd/, async function (next) {
+  this.r = await this.findOne();
+  // this -> query object ( update ) , this.findOne() -> gives the document, this.r -> saving the document in a property r in the query object so I can pass it to the post hook
+  next();
+});
+
+reviewSchema.post(/^findOneAnd/, async function () {
+  // noe the this -> still the query , this.r -> represent the Model (documnent)
+  await this.r.constructor.calcAverageRatinga(this.r.tour);
+  // this.r.tour -> the tour field ( tourId ) from the review document
 });
 
 const Review = mongoose.model('Review', reviewSchema);
