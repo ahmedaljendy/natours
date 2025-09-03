@@ -20,7 +20,7 @@ const createSendToken = (user, StatusCode, res) => {
     ),
     httpOnly: true,
   };
-  if (process.eventNames.NODE_ENV === 'production') cookieOptions.secure = true;
+  if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
 
   res.cookie('jwt', token, cookieOptions);
 
@@ -69,6 +69,8 @@ exports.protect = async (req, res, next) => {
     req.headers.authorization.startsWith('Bearer')
   ) {
     token = req.headers.authorization.split(' ')[1];
+  } else if (req.cookies.jwt) {
+    token = req.cookies.jwt;
   }
   if (!token) {
     throw new AppError(
@@ -80,7 +82,7 @@ exports.protect = async (req, res, next) => {
   // 2) Verify the token
   const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
 
-  // 3) Check if th euser still exists
+  // 3) Check if the user still exists
   const currentUser = await User.findById(decoded.id);
 
   if (!currentUser) {
@@ -94,7 +96,38 @@ exports.protect = async (req, res, next) => {
     );
   }
   req.user = currentUser;
+  res.locals.user = currentUser;
   next();
+};
+
+exports.isLoggedIn = async (req, res, next) => {
+  // 1) get the token
+  console.log(req.cookies.jwt);
+  if (req.cookies.jwt) {
+    // 2) Verify the token
+    try {
+      const decoded = await promisify(jwt.verify)(
+        req.cookies.jwt,
+        process.env.JWT_SECRET,
+      );
+
+      // 3) Check if the user still exists
+      const currentUser = await User.findById(decoded.id);
+
+      if (!currentUser) {
+        return next();
+      }
+      // 4) Check if the user changed his password after the token is issued
+      if (currentUser.changedPasswordAfter(decoded.iat)) {
+        return next();
+      }
+      res.locals.user = currentUser;
+      return next();
+    } catch (err) {
+      return next();
+    }
+  }
+  return next();
 };
 
 exports.restrictTo =
@@ -187,4 +220,12 @@ exports.updatePassword = async (req, res, next) => {
 
   // 4) Log the user in , send JWT
   createSendToken(user, 201, res);
+};
+
+exports.logout = (req, res) => {
+  res.cookie('jwt', 'loggedout', {
+    expires: new Date(Date.now() + 10 * 1000),
+    httpOnly: true,
+  });
+  res.status(200).json({ status: 'success' });
 };

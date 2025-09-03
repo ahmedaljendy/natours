@@ -61,7 +61,7 @@ const tourSchema = new mongoose.Schema(
       required: [true, 'A tour must have a summary'],
       trim: true,
     },
-    descreption: {
+    description: {
       type: String,
       trim: true,
     },
