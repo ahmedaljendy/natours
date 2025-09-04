@@ -102,7 +102,7 @@ exports.protect = async (req, res, next) => {
 
 exports.isLoggedIn = async (req, res, next) => {
   // 1) get the token
-  console.log(req.cookies.jwt);
+  // console.log(req.cookies.jwt);
   if (req.cookies.jwt) {
     // 2) Verify the token
     try {
